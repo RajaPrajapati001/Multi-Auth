@@ -1,6 +1,6 @@
 pipeline {
     agent any
-
+    
     environment {
         IMAGE_NAME = 'auth-service-image'
         CONTAINER_NAME = 'auth-service'
