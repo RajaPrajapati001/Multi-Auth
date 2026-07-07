@@ -53,8 +53,15 @@ pipeline {
         stage('Database Migration') {
             steps {
                 sh '''
-                    # Yahan --env-file ki jagah -v (Volume Mount) lagaya hai
-                    docker run --rm -v ${AUTH_ENV_FILE}:/app/.env ${IMAGE_NAME}:latest npx prisma migrate deploy || true
+                    SCHEMA_CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "^prisma/schema.prisma" || echo "YES")
+                    
+                    if [ -n "$SCHEMA_CHANGED" ] || [ "$SCHEMA_CHANGED" == "YES" ]; then
+                        echo "Schema changes detected. Running migration."
+                        # Yahan -v (Volume Mount) lagaya hai
+                        docker run --rm -v ${AUTH_ENV_FILE}:/app/.env ${IMAGE_NAME}:latest npx prisma migrate deploy || true
+                    else
+                        echo "No schema changes. Skipping migration."
+                    fi
                 '''
             }
         }
@@ -65,7 +72,6 @@ pipeline {
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
                     
-                    # Yahan bhi --env-file ki jagah -v (Volume Mount) lagaya hai
                     docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} -v ${AUTH_ENV_FILE}:/app/.env --restart unless-stopped ${IMAGE_NAME}:latest
                 '''
             }
@@ -80,6 +86,7 @@ pipeline {
                     if (healthStatus == "000" || healthStatus.startsWith("5")) {
                         error("Health check failed. HTTP Status: ${healthStatus}")
                     }
+                    echo "Auth service is operational."
                 }
             }
         }
@@ -87,6 +94,7 @@ pipeline {
 
     post {
         failure {
+            echo "Pipeline failed. Executing rollback."
             sh '''
                 docker stop ${CONTAINER_NAME} || true
                 docker rm ${CONTAINER_NAME} || true
