@@ -21,7 +21,7 @@ pipeline {
                 script {
                     sh "sudo mkdir -p ${ENV_DIR}"
                     try {
-                        withCredentials([file(credentialsId: 'auth-env-secret', variable: 'JENKINS_ENV')]) {
+                        withCredentials([file(credentialsId: 'auth-env', variable: 'JENKINS_ENV')]) {
                             sh "sudo cp \$JENKINS_ENV ${AUTH_ENV_FILE}"
                         }
                     } catch (Exception e) {
