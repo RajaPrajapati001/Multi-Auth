@@ -57,7 +57,6 @@ pipeline {
                     
                     if [ -n "$SCHEMA_CHANGED" ] || [ "$SCHEMA_CHANGED" == "YES" ]; then
                         echo "Schema changes detected. Running migration."
-                        # Yahan -v (Volume Mount) lagaya hai
                         docker run --rm -v ${AUTH_ENV_FILE}:/app/.env ${IMAGE_NAME}:latest npx prisma migrate deploy || true
                     else
                         echo "No schema changes. Skipping migration."
